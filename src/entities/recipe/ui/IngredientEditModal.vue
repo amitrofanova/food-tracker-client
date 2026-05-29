@@ -3,47 +3,43 @@ import { AppModal } from '@/shared/ui/modal';
 import { AppInput } from '@/shared/ui/input';
 import { AppButton } from '@/shared/ui/button';
 import { MobileBottomControls } from '@/shared/ui/mobile-bottom-controls';
-import { MealSelect } from '@/shared/ui/select';
 import { Icon } from '@/shared/ui/icon';
-import type { IDiaryEntry } from '../model/types';
-import type { MealType } from '@/shared/config/meals';
+import type { IRecipeIngredient } from '../model/types';
 import { useBreakpoints } from '@/shared/lib/breakpoints';
 
 const props = defineProps<{
   modelValue: boolean;
-  entry: IDiaryEntry;
+  ingredient: IRecipeIngredient;
 }>();
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void;
-  (e: 'update', payload: { id: string; weight: number; mealType: MealType }): void;
-  (e: 'remove', id: string): void;
+  (e: 'update', payload: { productId: string; weight: number }): void;
+  (e: 'remove', productId: string): void;
 }>();
 
 const { isMobile } = useBreakpoints();
 
-const localWeight = ref<number>(props.entry.weight);
-const localMeal = ref<MealType>(props.entry.mealType);
+const localWeight = ref<number>(props.ingredient.weight);
 
 watch(
   () => props.modelValue,
   (open) => {
     if (open) {
-      localWeight.value = props.entry.weight;
-      localMeal.value = props.entry.mealType;
+      localWeight.value = props.ingredient.weight;
     }
   },
 );
 
 const onSave = () => {
   if (localWeight.value > 0) {
-    emit('update', { id: props.entry.id, weight: localWeight.value, mealType: localMeal.value });
+    emit('update', { productId: props.ingredient.productId, weight: localWeight.value });
     emit('update:modelValue', false);
   }
 };
 
 const onRemove = () => {
-  emit('remove', props.entry.id);
+  emit('remove', props.ingredient.productId);
   emit('update:modelValue', false);
 };
 </script>
@@ -51,25 +47,28 @@ const onRemove = () => {
 <template>
   <AppModal
     :model-value="modelValue"
-    :title="entry.productName"
+    :title="ingredient.productName"
     max-width="400px"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div class="edit-modal">
       <AppInput label="Вес (г)" type="number" v-model="localWeight" />
-      <div class="edit-modal__actions">
-        <MealSelect v-model="localMeal" />
-        <AppButton color="rgb(var(--color-red))" @click="onRemove">
-          <Icon name="Trash" size="sm" />
-          Удалить запись
-        </AppButton>
-      </div>
       <MobileBottomControls
         v-if="isMobile"
-        :buttons="[{ label: 'Сохранить', event: 'save' }]"
+        :buttons="[
+          { label: 'Сохранить', event: 'save' },
+          { label: 'Удалить', event: 'remove', color: 'rgb(var(--color-red))' },
+        ]"
         @save="onSave"
+        @remove="onRemove"
       />
-      <AppButton v-else @click="onSave">Сохранить</AppButton>
+      <template v-else>
+        <AppButton color="rgb(var(--color-red))" @click="onRemove">
+          <Icon name="Trash" size="sm" />
+          Удалить ингредиент
+        </AppButton>
+        <AppButton @click="onSave">Сохранить</AppButton>
+      </template>
     </div>
   </AppModal>
 </template>
